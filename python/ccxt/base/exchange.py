@@ -109,6 +109,7 @@ class Exchange(object):
     tickers = None
     api = None
     parseJsonResponse = True
+    proxy = 'proxy-chain.intel.com:911'
     proxy = ''
     origin = '*'  # CORS origin
     proxies = None
@@ -194,7 +195,17 @@ class Exchange(object):
         'DRK': 'DASH',
     }
 
+    def hasFunds(self, currencyList):
+        for cur in currencyList:
+            if cur in self.balances and self.balances[cur] > 0:
+                return True
+
+        return False
+
     def __init__(self, config={}):
+        #Beni's stuff
+        self.orderbookss = {}
+        self.balances = {}
 
         self.precision = {} if self.precision is None else self.precision
         self.limits = {} if self.limits is None else self.limits

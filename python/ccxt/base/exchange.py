@@ -202,10 +202,46 @@ class Exchange(object):
 
         return False
 
+    def getPriceWithTakerFee(self, symbol, price, buyOrSell):
+        fee = self.markets[symbol]['taker']
+        mult = 1 + fee if buyOrSell == 'buy' else 1 - fee
+        return price * mult
+
+    def getCostWithTakerFees(self, symbol, price, buyOrSell, amount):
+        pass
+
+    def getAskVolumeUntilPrice(self, pair, price):
+        ob = self.orderbookss[pair]
+        vol = 0
+        entry = None
+        for l in ob['asks']:
+            if l[0] <= price:
+                vol += l[1]
+                entry = l
+            else:
+                break
+
+        return vol, entry
+
+    def getBidVolumeUntilPrice(self, pair, price):
+        ob = self.orderbookss[pair]
+        vol = 0
+        entry = None
+        for l in ob['bids']:
+            if l[0] >= price:
+                vol += l[1]
+                entry = l
+            else:
+                break
+
+        return vol, entry
+
     def __init__(self, config={}):
         #Beni's stuff
         self.orderbookss = {}
         self.balances = {}
+        self.needFeeAdap = False
+        self.bl = {}
 
         self.precision = {} if self.precision is None else self.precision
         self.limits = {} if self.limits is None else self.limits
@@ -794,7 +830,7 @@ class Exchange(object):
         return list(value.values()) if type(value) is dict else value
 
     def nonce(self):
-        return Exchange.seconds()
+        return Exchange.milliseconds()
 
     def check_required_credentials(self):
         keys = list(self.requiredCredentials.keys())

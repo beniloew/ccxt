@@ -265,6 +265,7 @@ class binance (Exchange):
                 'BCC': 'BCH',
                 'NANO': 'XRB',
             },
+            'needFeeAdap' : True,
             # exchange-specific options
             'options': {
                 'defaultTimeInForce': 'GTC',  # 'GTC' = Good To Cancel(default), 'IOC' = Immediate Or Cancel

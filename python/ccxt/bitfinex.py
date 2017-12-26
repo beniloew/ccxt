@@ -275,6 +275,7 @@ class bitfinex (Exchange):
                 'YYW': 'YOYOW',
                 'USD': 'USDT',
             },
+            'needFeeAdap' : True,
             'exceptions': {
                 'exact': {
                     'temporarily_unavailable': ExchangeNotAvailable,  # Sorry, the service is temporarily unavailable. See https://www.bitfinex.com/ for more info.

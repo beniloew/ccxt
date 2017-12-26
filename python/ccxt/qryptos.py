@@ -103,6 +103,16 @@ class qryptos (Exchange):
                     },
                 },
             },
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000000000,
+                }
+            },
+            'precision': {
+                'amount': 8,
+                'price': 8,
+            },                                                    
         })
 
     def fetch_markets(self):
@@ -111,6 +121,8 @@ class qryptos (Exchange):
         for p in range(0, len(markets)):
             market = markets[p]
             id = str(market['id'])
+#             print market
+#             id = market['id']
             base = market['base_currency']
             quote = market['quoted_currency']
             symbol = base + '/' + quote

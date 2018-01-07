@@ -112,7 +112,8 @@ class Exchange(object):
     proxy = 'proxy-chain.intel.com:911'
     proxy = ''
     origin = '*'  # CORS origin
-    proxies = None
+    proxies = {'http' : 'proxy-chain.intel.com:911', 'https' : 'proxy-chain.intel.com:911'}
+#     proxies = None
     apiKey = ''
     secret = ''
     password = ''
@@ -382,8 +383,7 @@ class Exchange(object):
     def fetch(self, url, method='GET', headers=None, body=None):
         """Perform a HTTP request and return decoded JSON data"""
         request_headers = self.prepare_request_headers(headers)
-        url = self.proxy + url
-
+#         url = self.proxy + url
         if self.verbose:
             print("\nRequest:", method, url, request_headers, body)
 

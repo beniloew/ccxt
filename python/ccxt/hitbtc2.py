@@ -23,6 +23,10 @@ from ccxt.base.errors import ExchangeNotAvailable
 
 class hitbtc2 (hitbtc):
 
+    def create_ioc_order(self, symbol, side, amount, price=None, params={}):
+        params['timeInForce'] = 'IOC'
+        return self.create_order(symbol, 'limit', side, amount, price, params)
+
     def describe(self):
         return self.deep_extend(super(hitbtc2, self).describe(), {
             'id': 'hitbtc2',

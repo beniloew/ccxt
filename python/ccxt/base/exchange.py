@@ -208,8 +208,41 @@ class Exchange(object):
         mult = 1 + fee if buyOrSell == 'buy' else 1 - fee
         return price * mult
 
-    def getCostWithTakerFees(self, symbol, price, buyOrSell, amount):
-        pass
+    def getBuyCost(self, symbol, price, amount):
+        ret = price * amount
+        if self.buyFeesFromBase:
+            return ret
+
+        fee = self.markets[symbol]['taker']
+        return ret * (1 + fee)
+
+    # returns how many base will be received when buying with quoteAmount for price
+    def getBuyAmount(self, symbol, price, quote, quoteAmount):
+        ret = quoteAmount / price
+        if self.buyFeesFromBase:
+            return ret
+
+        fee = self.markets[symbol]['taker']
+        return ret / (1 + fee)
+
+    def maxBuyAmount(self, symbol, price, quote):
+        return self.getBuyAmount(symbol, price, quote, self.balances[quote])
+
+    def getRealBuyVolume(self, symbol, volume):
+        if not self.buyFeesFromBase:
+            return volume
+
+        fee = self.markets[symbol]['taker']
+        return volume * (1 - fee)
+
+    # returns the amount needed to buy in order to get the required volume
+    # These 2 arent the same due to fees applied
+    def getRequiredBuyAmount(self, symbol, volume):
+        if not self.buyFeesFromBase:
+            return volume
+
+        fee = self.markets[symbol]['taker']
+        return volume / (1 - fee)
 
     def getAskVolumeUntilPrice(self, pair, price):
         ob = self.orderbookss[pair]
@@ -237,11 +270,15 @@ class Exchange(object):
 
         return vol, entry
 
+    def create_ioc_order(self, symbol, side, amount, price=None, params={}):
+        self.raise_error(NotSupported, details='create_ioc_order() not implemented yet')
+
     def __init__(self, config={}):
         #Beni's stuff
         self.orderbookss = {}
         self.balances = {}
-        self.needFeeAdap = False
+        # Buy fees are taken from base currency - e.g. -buying bch/btc, fees are taken in bch
+        self.buyFeesFromBase = False
         self.bl = {}
 
         self.precision = {} if self.precision is None else self.precision

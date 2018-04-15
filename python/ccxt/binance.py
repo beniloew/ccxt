@@ -278,7 +278,7 @@ class binance (Exchange):
                 'warnOnFetchOpenOrdersWithoutSymbol': True,
                 'recvWindow': 5 * 1000,  # 5 sec, binance default
                 'timeDifference': 0,  # the difference between system clock and Binance clock
-                'adjustForTimeDifference': False,  # controls the adjustment logic upon instantiation
+                'adjustForTimeDifference': True, #False,  # controls the adjustment logic upon instantiation
             },
             'exceptions': {
                 '-1000': ExchangeNotAvailable,  # {"code":-1000,"msg":"An unknown error occured while processing the request."}

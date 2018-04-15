@@ -109,11 +109,10 @@ class Exchange(object):
     tickers = None
     api = None
     parseJsonResponse = True
-    proxy = 'proxy-chain.intel.com:911'
     proxy = ''
     origin = '*'  # CORS origin
-    proxies = {'http' : 'proxy-chain.intel.com:911', 'https' : 'proxy-chain.intel.com:911'}
-#     proxies = None
+    proxies = None
+    # proxies = None
     apiKey = ''
     secret = ''
     password = ''
@@ -217,7 +216,7 @@ class Exchange(object):
         return ret * (1 + fee)
 
     # returns how many base will be received when buying with quoteAmount for price
-    def getBuyAmount(self, symbol, price, quote, quoteAmount):
+    def getBuyAmount(self, symbol, price, quoteAmount):
         ret = quoteAmount / price
         if self.buyFeesFromBase:
             return ret
@@ -226,7 +225,7 @@ class Exchange(object):
         return ret / (1 + fee)
 
     def maxBuyAmount(self, symbol, price, quote):
-        return self.getBuyAmount(symbol, price, quote, self.balances[quote])
+        return self.getBuyAmount(symbol, price, self.balances[quote])
 
     def getRealBuyVolume(self, symbol, volume):
         if not self.buyFeesFromBase:
@@ -273,6 +272,40 @@ class Exchange(object):
     def create_ioc_order(self, symbol, side, amount, price=None, params={}):
         self.raise_error(NotSupported, details='create_ioc_order() not implemented yet')
 
+    def get_min_amount(self, symbol, price):
+        market = self.markets[symbol]
+        min_cost = market['limits']['cost']['min']
+        min_amount = market['limits']['amount']['min']
+        if not min_cost:
+            return min_amount
+        min_amount_by_cost = min_cost / price
+        min_amount_by_cost_precised = self.amount_to_precision(symbol, min_amount_by_cost)
+        if min_amount_by_cost_precised < min_amount_by_cost:
+            min_amount_by_cost_precised += 1 / math.pow(10, market['precision']['amount'])
+
+        return max(min_amount, min_amount_by_cost_precised)
+
+    def can_participate_sell(self, symbol, amount):
+        prc = 0
+        try:
+            prc = self.orderbookss[symbol]['asks'][0][0]
+        except:
+            return False
+
+        return amount >= self.get_min_amount(symbol, prc)
+
+    def can_participate_buy(self, symbol, amount):
+        prc = 0
+        try:
+            prc = self.orderbookss[symbol]['bids'][0][0]
+        except:
+            return False
+
+        return amount >= self.get_min_amount(symbol, prc)
+
+    def round_amount(self, symbol, amount):
+        return round(amount, self.markets[symbol]['precision']['amount'])
+
     def __init__(self, config={}):
         #Beni's stuff
         self.orderbookss = {}
@@ -280,6 +313,7 @@ class Exchange(object):
         # Buy fees are taken from base currency - e.g. -buying bch/btc, fees are taken in bch
         self.buyFeesFromBase = False
         self.bl = {}
+        self.sleepForBalanceCheck = 1
 
         self.precision = {} if self.precision is None else self.precision
         self.limits = {} if self.limits is None else self.limits
@@ -412,8 +446,8 @@ class Exchange(object):
                 headers.update({'User-Agent': self.userAgent})
             elif (type(self.userAgent) is dict) and ('User-Agent' in self.userAgent):
                 headers.update(self.userAgent)
-        if self.proxy:
-            headers.update({'Origin': self.origin})
+        # if self.proxy:
+        #     headers.update({'Origin': self.origin})
         headers.update({'Accept-Encoding': 'gzip, deflate'})
         return headers
 
@@ -546,7 +580,7 @@ class Exchange(object):
     @staticmethod
     def truncate_to_string(num, precision=0):
         if precision > 0:
-            parts = ('%f' % Decimal(num)).split('.')
+            parts = ('%.*f' % (precision + 5, Decimal(num))).split('.')
             decimal_digits = parts[1][:precision].rstrip('0')
             decimal_digits = decimal_digits if len(decimal_digits) else '0'
             return parts[0] + '.' + decimal_digits

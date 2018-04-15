@@ -21,6 +21,16 @@ from ccxt.base.errors import RequestTimeout
 
 
 class poloniex (Exchange):
+    def create_ioc_order(self, symbol, side, amount, price=None, params={}):
+        params['immediateOrCancel'] = '1'
+        orderId = self.create_order(symbol, 'limit', side, amount, price, params)['id']
+        order = self.fetch_order(orderId)
+        #Since the IOC order is automatically closed, it'll not appear in poloniex, and ccxt will put the filled amount as completed
+        #But we dont really know, since that order is filled/cancelled right after we put it
+        if order['status'] != 'closed':
+            raise Exception('IOC order should be closed. err in poloniex!!!')
+        order['filled'] = 0
+        return order
 
     def describe(self):
         return self.deep_extend(super(poloniex, self).describe(), {
@@ -120,7 +130,7 @@ class poloniex (Exchange):
             },
             'limits': {
                 'amount': {
-                    'min': 0.00000001,
+                    'min': 0.000001,
                     'max': 1000000000,
                 },
                 'price': {
@@ -128,7 +138,7 @@ class poloniex (Exchange):
                     'max': 1000000000,
                 },
                 'cost': {
-                    'min': 0.00000000,
+                    'min': 0.0001,
                     'max': 1000000000,
                 },
             },
@@ -611,7 +621,7 @@ class poloniex (Exchange):
         response = getattr(self, method)(self.extend({
             'currencyPair': market['id'],
             'rate': self.price_to_precision(symbol, price),
-            'amount': self.amount_to_precision(symbol, amount),
+            'amount': self.amount_to_string(symbol, amount),
         }, params))
         timestamp = self.milliseconds()
         order = self.parse_order(self.extend({

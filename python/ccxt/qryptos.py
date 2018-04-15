@@ -14,6 +14,10 @@ from ccxt.base.errors import InvalidNonce
 
 
 class qryptos (Exchange):
+    def create_ioc_order(self, symbol, side, amount, price=None, params={}):
+        orderId = self.create_order(symbol, 'limit', side, amount, price, params)['id']
+        order = self.cancel_order(orderId)
+        return order
 
     def describe(self):
         return self.deep_extend(super(qryptos, self).describe(), {

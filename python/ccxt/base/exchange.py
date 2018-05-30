@@ -304,6 +304,7 @@ class Exchange(object):
         return amount >= self.get_min_amount(symbol, prc)
 
     def round_amount(self, symbol, amount):
+        # print 'Beni', symbol, self.markets[symbol]['precision']['amount'], amount
         return round(amount, self.markets[symbol]['precision']['amount'])
 
     def __init__(self, config={}):

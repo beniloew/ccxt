@@ -14,6 +14,26 @@ from ccxt.base.errors import OrderNotCached
 
 
 class cryptopia (Exchange):
+    def create_ioc_order(self, symbol, side, amount, price=None, params={}):
+        order = self.create_order(symbol, 'limit', side, amount, price, params)
+        #orderId = self.create_order(symbol, 'limit', side, amount, price, params)['id']
+        orderId = order['id']
+        if not orderId: # that happens when an order is instantly filled
+            order['status'] = 'closed'
+            return order
+        try:
+            cancel_resp = self.cancel_order(orderId, symbol)
+            print cancel_resp
+        except OrderNotFound as e:
+            if 'not exist' not in e.args[0]: # means that we are cancelling a fully filled order
+                raise e
+        for i in range(5):
+            order = self.fetch_order(orderId, symbol)
+            if order['status'] in ['closed', 'expired', 'canceled']:
+                break
+        if order['status'] not in ['closed', 'expired', 'canceled']:
+            raise Exception('Something went wrong with cryptopia order!!!')
+        return order
 
     def describe(self):
         return self.deep_extend(super(cryptopia, self).describe(), {

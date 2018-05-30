@@ -23,6 +23,21 @@ from ccxt.base.errors import InvalidNonce
 
 
 class exmo (Exchange):
+    def create_ioc_order(self, symbol, side, amount, price=None, params={}):
+        orderId = self.create_order(symbol, 'limit', side, amount, price, params)['id']
+        try:
+            cancel_resp = self.cancel_order(orderId, symbol)
+            print cancel_resp
+        except OrderNotFound as e:
+            # if '1009' not in e.args[0]: # 1009 means that we are cancelling a fully filled order
+            raise e
+        for i in range(5):
+            order = self.fetch_order(orderId, symbol)
+            if order['status'] in ['closed', 'expired', 'canceled']:
+                break
+        if order['status'] not in ['closed', 'expired', 'canceled']:
+            raise Exception('Something went wrong with exmo order!!!')
+        return order
 
     def describe(self):
         return self.deep_extend(super(exmo, self).describe(), {

@@ -14,6 +14,20 @@ from ccxt.base.errors import OrderNotFound
 
 
 class okcoinusd (Exchange):
+    def create_ioc_order(self, symbol, side, amount, price=None, params={}):
+        orderId = self.create_order(symbol, 'limit', side, amount, price, params)['id']
+        try:
+            cancel_resp = self.cancel_order(orderId, symbol)
+        except OrderNotFound as e:
+            if '1009' not in e.args[0]: # 1009 means that we are cancelling a fully filled order
+                raise e
+        for i in range(5):
+            order = self.fetch_order(orderId, symbol)
+            if order['info']['status'] in [-1, 2]: # -1 means the order was cancelled, 2 is fully filled
+                break
+        # if order['status'] != 'canceled':
+        #     raise Exception('Qryptos canceled order status is wrong! - {}'.format(order['status']))
+        return order
 
     def describe(self):
         return self.deep_extend(super(okcoinusd, self).describe(), {

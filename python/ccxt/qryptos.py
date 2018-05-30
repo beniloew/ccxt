@@ -17,6 +17,8 @@ class qryptos (Exchange):
     def create_ioc_order(self, symbol, side, amount, price=None, params={}):
         orderId = self.create_order(symbol, 'limit', side, amount, price, params)['id']
         order = self.cancel_order(orderId)
+        if order['status'] not in ['closed', 'expired', 'canceled']:
+            raise Exception('Qryptos canceled order status is wrong! - {}'.format(order['status']))
         return order
 
     def describe(self):
@@ -137,7 +139,7 @@ class qryptos (Exchange):
             minPrice = None
             if base == 'BTC':
                 minAmount = 0.001
-            elif base == 'ETH':
+            elif base in ['ETH', 'BCH']:
                 minAmount = 0.01
             if quote == 'BTC':
                 minPrice = 0.00000001
@@ -156,9 +158,9 @@ class qryptos (Exchange):
                 'price': None,
             }
             if minAmount is not None:
-                precision['amount'] = -math.log10(minAmount)
+                precision['amount'] = int(-math.log10(minAmount))
             if minPrice is not None:
-                precision['price'] = -math.log10(minPrice)
+                precision['price'] = int(-math.log10(minPrice))
             result.append({
                 'id': id,
                 'symbol': symbol,
@@ -313,6 +315,7 @@ class qryptos (Exchange):
         }
         if type == 'limit':
             order['price'] = price
+        order = {"order" : order}
         response = self.privatePostOrders(self.extend(order, params))
         return self.parse_order(response)
 

@@ -10,6 +10,16 @@ from ccxt.base.errors import InvalidNonce
 
 
 class c2cx (Exchange):
+    def create_ioc_order(self, symbol, side, amount, price=None, params={}):
+        orderId = self.create_order(symbol, 'limit', side, amount, price, params)['id']
+        self.cancel_order(orderId, symbol)
+        for i in range(5):
+            order = self.fetch_order(orderId, symbol)
+            if order['status'] in ['closed', 'expired', 'canceled']:
+                break
+        if order['status'] not in ['closed', 'expired', 'canceled']:
+            raise Exception('Something went wrong with {} order!!!'.format(self.id))
+        return order
 
     def describe(self):
         return self.deep_extend(super(c2cx, self).describe(), {
@@ -66,7 +76,7 @@ class c2cx (Exchange):
                 'messages': {
                     'Sign is wrong': AuthenticationError,
                     # 'Nonce is too small': InvalidNonce,
-                    # 'Order not found': OrderNotFound,
+                    'orderId is wrong': OrderNotFound,
                     'symbol not exists': ExchangeError,
                     # 'user': {
                     #     'not_enough_free_balance': InsufficientFunds,
